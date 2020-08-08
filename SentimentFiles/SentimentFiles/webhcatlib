@@ -1,0 +1,119 @@
+#/bin/bash
+###########################################
+# Wrapper around WebHDFS and WebHCat
+# author: Jean-Philippe Player jp@hortonworks.com
+#
+# This library of functions can be used to issues
+# commands to a Hadoop cluster.
+#
+# Requires WebHDFS turned on for the Namenode.
+# Requires WebHCat.
+###########################################
+
+CURL_OPTS="-s -S "
+#"-o /dev/null"
+
+if test $DEBUG == "true" ; then
+	CURL_OPTS="-i"
+fi
+
+function hdfs_connect(){
+	USER=$1
+	NN_HOST=$2
+	WEBHCAT_HOST=$3
+	EC2_DATANODE_HOST=$4
+	
+	#WebHDFS check
+	#WebHCat check
+}
+
+TPUT='tput -T xterm-color'
+txtbld=$(${TPUT} bold)             # Bold
+txtrst=$(${TPUT} sgr0)             # Reset
+
+function printBanner() {
+	echo -e "${txtbld}$1 ${txtrst}\n$2"
+}
+function processStep() {
+	printBanner "$1" "$2"
+}
+
+# $1=targetdir (from root with leading / but no ending /)
+function hdfs_mkdir(){
+	TARGETDIR=$1
+	processStep "Create directory $TARGETDIR"  "curl $CURL_OPTS -X PUT \"http://$NN_HOST:50070/webhdfs/v1$TARGETDIR?user.name=$USER&op=MKDIRS&permission=755\""
+if [ $DRYRUN != "true" ]; then
+	curl $CURL_OPTS -X PUT "http://$NN_HOST:50070/webhdfs/v1$TARGETDIR?user.name=$USER&op=MKDIRS&permission=755" 
+fi
+}
+
+# $1=filename, $2=targetdir (from root with leading / but not ending /)
+function hdfs_put(){
+	FILENAME=$1
+	TARGETDIR=$2
+	
+	if [ -z "$EC2_DATANODE_HOST" ]; then
+		
+		processStep "Uploading $FILENAME" "curl -s -i -X PUT \"http://$NN_HOST:50070/webhdfs/v1$TARGETDIR/$FILENAME?user.name=$USER&op=CREATE\"" 
+		DATANODE=`curl -s -i -X PUT "http://$NN_HOST:50070/webhdfs/v1$TARGETDIR/$FILENAME?user.name=$USER&op=CREATE" | grep Location | awk  '{ print $2; }' | sed -e 's/false.*/false/' `
+		echo "curl $CURL_OPTS -X PUT -T $FILENAME \"$DATANODE\""
+		curl $CURL_OPTS -X PUT -T $FILENAME "$DATANODE" 
+		
+else
+	# Must process directly for Amazon. Just go against a datanode.
+		processStep "Uploading $FILENAME" "curl -s -i -X PUT curl $CURL_OPTS -X PUT -T $FILENAME \"http://$EC2_DATANODE_HOST:50075/webhdfs/v1$TARGETDIR/$FILENAME?op=CREATE&user.name=hdfs&overwrite=false\"" 
+	if [ $DRYRUN != "true" ]; then
+		curl $CURL_OPTS -X PUT -T $FILENAME "http://$EC2_DATANODE_HOST:50075/webhdfs/v1$TARGETDIR/$FILENAME?op=CREATE&user.name=$USER&overwrite=false" 
+	fi
+
+fi
+}
+
+# $1=targetdir (from root with leading / but not ending /)
+function hdfs_rmdir(){
+	TARGETDIR=$1
+	processStep "Removing directory $TARGETDIR" "curl $CURL_OPTS -X DELETE \"http://$NN_HOST:50070/webhdfs/v1$TARGETDIR?user.name=$USER&op=DELETE&recursive=true\""
+if [ $DRYRUN != "true" ]; then
+	curl $CURL_OPTS -X DELETE "http://$NN_HOST:50070/webhdfs/v1$TARGETDIR?user.name=$USER&op=DELETE&recursive=true"
+fi
+}
+
+# $1=table $2=database (optional)
+function hcat_dropTable() {
+	TABLE=$1
+	DATABASE=$2
+	if test "$DATABASE" == "" ; then
+		DATABASE=default
+	fi
+	
+	processStep "Drop table $DATABASE.$TABLE" "curl $CURL_OPTS -X DELETE \"http://$WEBHCAT_HOST:50111/templeton/v1/ddl/database/$DATABASE/table/$TABLE?user.name=$USER\""
+if [ $DRYRUN != "false" ]; then
+	curl $CURL_OPTS -X DELETE "http://$WEBHCAT_HOST:50111/templeton/v1/ddl/database/$DATABASE/table/$TABLE?user.name=$USER" 
+fi
+}
+
+function hive_exec() {
+	SCRIPT_HDFS_PATH=$1
+	processStep "Executing SQL statement in script $SCRIPT_HDFS_PATH" "curl $CURL_OPTS \n     -d user.name=$USER \n     -d file="hdfs://$SCRIPT_HDFS_PATH"\n     \"http://$WEBHCAT_HOST:50111/templeton/v1/hive\" "
+if [ $DRYRUN != "true" ]; then
+	curl $CURL_OPTS \
+		-d user.name=$USER \
+		-d file="hdfs://$SCRIPT_HDFS_PATH" \
+		"http://$WEBHCAT_HOST:50111/templeton/v1/hive" 
+fi
+}
+
+function pig_exec() {
+	SCRIPT_HDFS_PATH=$1
+	processStep "Run Pig job $SCRIPT_HDFS_PATH" "curl\n     -d user.name=$USER \n     -d file=\"hdfs://$SCRIPT_HDFS_PATH\" \n     -d arg=-v \n     \"http://$WEBHCAT_HOST:50111/templeton/v1/pig\""
+	if [ $DRYRUN != "true" ]; then
+	curl -d user.name=$USER \
+	     -d file="hdfs://$SCRIPT_HDFS_PATH" \
+	     -d arg=-v \
+	     "http://$WEBHCAT_HOST:50111/templeton/v1/pig"
+	fi
+}
+
+function pause(){
+  read -p "$*"
+}

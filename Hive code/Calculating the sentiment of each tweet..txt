@@ -1,0 +1,27 @@
+In this step, we will create l1, l2, and l3 views which will help us in calculating the sentiment of each tweet.
+
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create view l1. Thel1 view converts each tweet into a lower case and explodes it into a list of words. Run below command in Hive on your web console.
+
+
+create view l1 as select id, words from tweets_raw lateral view explode(sentences(lower(text))) dummy as words;
+
+Create view l2. The l2 view stores every word of a tweet in a new row. Run below command in Hive on your web console.
+
+
+create view l2 as select id, word from l1 lateral view explode( words ) dummy as word ;
+
+
+Create view l3. The l3 view joins l2 view with the dictionary table and stores the polarity of each word. Run below command in Hive on your web console.
+
+
+create view l3 as select 
+id, 
+l2.word,
+case d.polarity 
+when  'negative' then -1
+when 'positive' then 1 
+else 0 end as polarity 
+from l2 left outer join dictionary d on l2.word = d.word;

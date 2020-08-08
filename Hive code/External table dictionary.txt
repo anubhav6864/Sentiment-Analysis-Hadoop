@@ -1,0 +1,20 @@
+The objective of this step is to create an external table dictionary. This table contains English words and their polarity. Polarity means if the word has positive, negative, or neutral sentiment. Since a tweet consists of words, this table will help us in calculating the sentiment of the entire tweet.
+
+
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create an external table dictionary ,table contains words and their polarity.
+
+CREATE EXTERNAL TABLE dictionary (
+type string,
+length int,
+word string,
+pos string,
+stemmed string,
+polarity string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE
+LOCATION '/user/${env:USER}/SentimentFiles/SentimentFiles/upload/data/dictionary';
+Sample rows of dictionary table are

@@ -1,0 +1,14 @@
+In this step, we calculate the sentiment of each tweet. We create the new table tweets_sentiment which groups the tweets of l3 view on the basis of id, sums up the polarity of each word and assigns each tweet a sentiment label such as positive, negative, or neutral.
+
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create a tweets_sentiment table. Each row of `tweets_sentiment table stores the sentiment of the tweet. Run below command in the Hive on your web console
+
+create table tweets_sentiment stored as orc as select 
+id, 
+case 
+when sum( polarity ) > 0 then 'positive' 
+when sum( polarity ) < 0 then 'negative'  
+else 'neutral' end as sentiment 
+from l3 group by id;

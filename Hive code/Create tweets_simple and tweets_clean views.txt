@@ -1,0 +1,23 @@
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create view tweets_simple. The tweets_simple view contains tweet id, the timestamp of the tweet, tweet text, and user's time zone. Run below command in the Hive on your web console.
+
+CREATE VIEW tweets_simple AS
+SELECT          
+id,
+cast ( from_unixtime( unix_timestamp(concat( '2013 ', substring(created_at,5,15)), 'yyyy MMM dd hh:mm:ss')) as timestamp) ts,
+text,
+user.time_zone 
+FROM tweets_raw;
+
+
+Create view tweets_clean. The tweets_clean view maps the user's timezone to the country. Each row of the tweets_clean view contains tweet_id, the timestamp of the tweet, tweet text, and user's country (which is derived from time zone). 
+
+CREATE VIEW tweets_clean AS
+SELECT
+id,
+ts,
+text,
+m.country 
+FROM tweets_simple t LEFT OUTER JOIN time_zone_map m ON t.time_zone = m.time_zone;

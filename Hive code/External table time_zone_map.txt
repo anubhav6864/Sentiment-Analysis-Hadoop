@@ -1,0 +1,15 @@
+The objective of this step is to create an external table time_zone_map. The time_zone_map table is a temporary table which is used to map the user's timezone in the tweet to the country in the next steps
+
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create an external table time_zone_map. Run below command in Hive on your web console. ${env:USER} gets replaced by your username automatically.
+
+CREATE EXTERNAL TABLE time_zone_map (
+time_zone string,
+country string,
+notes string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE
+LOCATION '/user/${env:USER}/SentimentFiles/SentimentFiles/upload/data/time_zone_map';

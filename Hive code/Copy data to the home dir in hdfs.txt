@@ -1,0 +1,13 @@
+The dataset containing tweets of "Iron Man 3" movie is located at below location in HDFS
+
+/data/SentimentFiles/SentimentFiles/upload/data
+We'll calculate sentiment using a rudimentary technique. We've polarity of common words in below dictionary file in HDFS
+
+/data/SentimentFiles/SentimentFiles/upload/data/dictionary/dictionary.tsv
+Based on the polarity of words, we will calculate the sentiment of each tweet. You can choose exactly the same steps or use different strategies altogether to calculate the sentiment.
+
+
+hadoop fs -cp /data/SentimentFiles /user/YOUR_USER_NAME
+Alternatively, you can use the command, where $USER is replaced by your username automatically.
+
+hadoop fs -cp /data/SentimentFiles /user/$USER

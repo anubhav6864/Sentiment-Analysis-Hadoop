@@ -1,0 +1,14 @@
+In this step, we create a new table tweetsbi. We join tweets_clean and tweets_sentiment tables and store sentiment of each tweet. Each row of the tweetsbi table contains tweet id, timestamp, tweet text, country, and its sentiment
+
+Launch hive console by typing the hive command in the web console.
+
+hive
+Create tweetsbi table. Run the below command in the Hive on your web console
+
+CREATE TABLE tweetsbi 
+STORED AS ORC
+AS
+SELECT 
+t.*,
+s.sentiment 
+FROM tweets_clean t LEFT OUTER JOIN tweets_sentiment s on t.id = s.id;
